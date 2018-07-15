@@ -1480,6 +1480,7 @@ defmodule EHealth.Web.EmployeeRequestControllerTest do
       template(2)
       legal_entity = insert(:prm, :legal_entity)
       division = insert(:prm, :division)
+      party = insert(:prm, :party)
 
       employee =
         insert(
@@ -1487,6 +1488,7 @@ defmodule EHealth.Web.EmployeeRequestControllerTest do
           :employee,
           legal_entity: legal_entity,
           division: division,
+          party: party,
           employee_type: "OWNER"
         )
 
@@ -1495,7 +1497,8 @@ defmodule EHealth.Web.EmployeeRequestControllerTest do
           :prm,
           :employee,
           legal_entity: legal_entity,
-          division: division
+          division: division,
+          party: party
         )
 
       contract = insert(:prm, :contract, contractor_owner_id: employee.id)
@@ -1554,7 +1557,8 @@ defmodule EHealth.Web.EmployeeRequestControllerTest do
           :employee,
           legal_entity: legal_entity1,
           division: division1,
-          party: party
+          party: party,
+          employee_type: "OWNER"
         )
 
       employee2 =
@@ -1563,7 +1567,8 @@ defmodule EHealth.Web.EmployeeRequestControllerTest do
           :employee,
           legal_entity: legal_entity2,
           division: division2,
-          party: party
+          party: party,
+          employee_type: "OWNER"
         )
 
       contract1 = insert(:prm, :contract, contractor_owner_id: employee1.id)
