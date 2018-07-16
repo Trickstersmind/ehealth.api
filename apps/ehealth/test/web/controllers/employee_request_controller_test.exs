@@ -1424,6 +1424,7 @@ defmodule EHealth.Web.EmployeeRequestControllerTest do
       template(2)
       legal_entity = insert(:prm, :legal_entity)
       division = insert(:prm, :division)
+      party = insert(:prm, :party)
 
       employee =
         insert(
@@ -1431,6 +1432,7 @@ defmodule EHealth.Web.EmployeeRequestControllerTest do
           :employee,
           legal_entity: legal_entity,
           division: division,
+          party: party,
           employee_type: "OWNER"
         )
 
@@ -1444,7 +1446,7 @@ defmodule EHealth.Web.EmployeeRequestControllerTest do
         |> put_in([:party, :tax_id], "47542240")
         |> put_in([:legal_entity_id], legal_entity.id)
         |> put_in([:division_id], division.id)
-        |> put_in([:employee_type], "OWNER")
+        |> put_in([:party_id], party.id)
 
       employee_request =
         insert(
@@ -1579,6 +1581,7 @@ defmodule EHealth.Web.EmployeeRequestControllerTest do
         |> put_in([:party, :email], "mis_bot_1493831618@user.com")
         |> put_in([:legal_entity_id], legal_entity2.id)
         |> put_in([:division_id], division2.id)
+        |> put_in([:party_id], party.id)
 
       employee_request =
         insert(
