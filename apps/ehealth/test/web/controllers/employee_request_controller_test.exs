@@ -1536,6 +1536,71 @@ defmodule EHealth.Web.EmployeeRequestControllerTest do
       assert contract.is_suspended
     end
 
+    test "approve non-existing employee, suspend all party contracts", %{conn: conn} do
+      create_user_role()
+      get_user_roles()
+      get_roles_by_name(UUID.generate())
+      get_user()
+      put_client()
+      get_client_type_by_name(UUID.generate(), 2)
+      template(2)
+
+      party = insert(:prm, :party)
+      division1 = insert(:prm, :division)
+      division2 = insert(:prm, :division)
+      legal_entity1 = insert(:prm, :legal_entity)
+      legal_entity2 = insert(:prm, :legal_entity)
+
+      employee1 =
+        insert(
+          :prm,
+          :employee,
+          legal_entity: legal_entity1,
+          division: division1,
+          party: party,
+          employee_type: "OWNER"
+        )
+
+      contract = insert(:prm, :contract, contractor_owner_id: employee1.id)
+
+      employee2 =
+        build(
+          :employee,
+          legal_entity: legal_entity2,
+          division: division2,
+          party: party,
+          employee_type: "OWNER"
+        )
+
+      # Create employee2
+
+      data =
+        employee_request_data()
+        |> put_in([:party, :email], "mis_bot_1493831618@user.com")
+        |> put_in([:legal_entity_id], legal_entity2.id)
+        |> put_in([:division_id], division2.id)
+
+      employee_request =
+        insert(
+          :il,
+          :employee_request,
+          employee_id: employee2.id,
+          data: data
+        )
+
+      resp =
+        conn
+        |> put_client_id_header(legal_entity2.id)
+        |> post(employee_request_path(conn, :approve, employee_request.id))
+        |> json_response(200)
+        |> Map.get("data")
+
+      assert "APPROVED" == resp["status"]
+
+      contract = PRMRepo.get(Contract, contract.id)
+      assert contract.is_suspended
+    end
+
     test "approve existing employee, suspend all party contracts", %{conn: conn} do
       create_user_role()
       get_user_roles()
