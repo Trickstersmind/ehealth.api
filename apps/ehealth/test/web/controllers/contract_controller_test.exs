@@ -677,7 +677,7 @@ defmodule EHealth.Web.ContractControllerTest do
 
       conn =
         conn
-        |> put_client_id_header(UUID.generate())
+        |> put_client_id_header(legal_entity.id)
         |> put_consumer_id_header(party_user.user_id)
         |> Plug.Conn.put_req_header("drfo", party_user.party.tax_id)
         |> patch(contract_path(conn, :update, contract.id), params)
@@ -782,7 +782,7 @@ defmodule EHealth.Web.ContractControllerTest do
 
       conn =
         conn
-        |> put_client_id_header(UUID.generate())
+        |> put_client_id_header(legal_entity.id)
         |> put_consumer_id_header(party_user.user_id)
         |> Plug.Conn.put_req_header("drfo", party_user.party.tax_id)
         |> patch(contract_path(conn, :update, contract.id), params)
@@ -879,6 +879,94 @@ defmodule EHealth.Web.ContractControllerTest do
 
       assert resp = json_response(conn, 422)
       assert get_in(resp, ~w(error message)) == "declaration_limit is not allowed for employee speciality"
+    end
+
+    test "client_id validation failed during update_employee", %{conn: conn} do
+      nhs()
+      contract_request = insert(:il, :contract_request)
+      contract = insert(:prm, :contract, contract_request_id: contract_request.id)
+      legal_entity = insert(:prm, :legal_entity, id: contract.contractor_legal_entity_id)
+      division = insert(:prm, :division, legal_entity: legal_entity)
+      employee = insert(:prm, :employee, legal_entity: legal_entity)
+      employee_id = employee.id
+      insert(:prm, :contract_division, contract_id: contract.id, division_id: division.id)
+
+      insert(
+        :prm,
+        :contract_employee,
+        contract_id: contract.id,
+        employee_id: employee_id,
+        division_id: division.id,
+        declaration_limit: 2000
+      )
+
+      party_user = insert(:prm, :party_user)
+
+      content = %{
+        "employee_id" => employee_id,
+        "division_id" => division.id,
+        "declaration_limit" => 10,
+        "staff_units" => 0.33
+      }
+
+      params = %{
+        "signed_content" =>
+          content
+          |> Jason.encode!()
+          |> Base.encode64(),
+        "signed_content_encoding" => "base64"
+      }
+
+      drfo_signed_content(content, party_user.party.tax_id)
+
+      conn =
+        conn
+        |> put_client_id_header(UUID.generate())
+        |> put_consumer_id_header(party_user.user_id)
+        |> Plug.Conn.put_req_header("drfo", party_user.party.tax_id)
+        |> patch(contract_path(conn, :update, contract.id), params)
+
+      assert resp = json_response(conn, 422)
+      assert get_in(resp, ~w(error message)) == "Employee should be active Doctor within current legal_entity_id"
+    end
+
+    test "client_id validation failed during insert_employee", %{conn: conn} do
+      nhs()
+      contract_request = insert(:il, :contract_request)
+      contract = insert(:prm, :contract, contract_request_id: contract_request.id)
+      legal_entity = insert(:prm, :legal_entity, id: contract.contractor_legal_entity_id)
+      division = insert(:prm, :division, legal_entity: legal_entity)
+      employee = insert(:prm, :employee, legal_entity: legal_entity)
+      employee_id = employee.id
+      insert(:prm, :contract_division, contract_id: contract.id, division_id: division.id)
+      party_user = insert(:prm, :party_user)
+
+      content = %{
+        "employee_id" => employee_id,
+        "division_id" => division.id,
+        "declaration_limit" => 10,
+        "staff_units" => 0.33
+      }
+
+      params = %{
+        "signed_content" =>
+          content
+          |> Jason.encode!()
+          |> Base.encode64(),
+        "signed_content_encoding" => "base64"
+      }
+
+      drfo_signed_content(content, party_user.party.tax_id)
+
+      conn =
+        conn
+        |> put_client_id_header(UUID.generate())
+        |> put_consumer_id_header(party_user.user_id)
+        |> Plug.Conn.put_req_header("drfo", party_user.party.tax_id)
+        |> patch(contract_path(conn, :update, contract.id), params)
+
+      assert resp = json_response(conn, 422)
+      assert get_in(resp, ~w(error message)) == "Employee should be active Doctor within current legal_entity_id"
     end
   end
 
