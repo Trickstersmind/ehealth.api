@@ -6,7 +6,7 @@ defmodule EHealth.Employees do
   import Ecto.Changeset
   import EHealth.Utils.Connection
   import EHealth.Plugs.ClientContext, only: [authorize_legal_entity_id: 3]
-  import EHealth.LegalEntities.ContractSuspender
+  import EHealth.Contracts.ContractSuspender
 
   alias Scrivener.Page
   alias Ecto.Changeset
