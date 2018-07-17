@@ -152,8 +152,8 @@ defmodule EHealth.Employees do
 
   def create_or_update_employee(%Request{data: %{"employee_id" => employee_id} = employee_request}, headers) do
     employee = get_by_id!(employee_id)
-    party_id = employee |> Map.get(:party, %{}) |> Map.get(:id)
-    party = party_id |> Parties.get_by_id!()
+    party = Parties.get_by_id!(employee.party.id)
+    party_id = party.id
     party_update_params = EmployeeRequests.create_party_params(employee_request)
 
     employee_update_params =
@@ -196,18 +196,13 @@ defmodule EHealth.Employees do
     |> where([e], e.party_id == ^party_id)
     |> PRMRepo.all()
     |> Enum.reduce([], fn owner, acc ->
-      get_contracts_params = %{
+      contract_params = %{
         contractor_owner_id: owner.id,
         status: Contract.status(:verified),
         is_suspended: false
       }
 
-      {
-        :ok,
-        %Page{entries: contracts},
-        _
-      } = Contracts.list(get_contracts_params, nil, headers)
-
+      {:ok, %Page{entries: contracts}, _} = Contracts.list(contract_params, nil, headers)
       contracts ++ acc
     end)
   end
