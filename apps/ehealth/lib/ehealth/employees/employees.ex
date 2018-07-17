@@ -150,7 +150,7 @@ defmodule EHealth.Employees do
     |> PRMRepo.all()
   end
 
-  def create_or_update_employee(%Request{data: %{"employee_id" => employee_id} = employee_request}, req_headers) do
+  def create_or_update_employee(%Request{data: %{"employee_id" => employee_id} = employee_request}, headers) do
     employee = get_by_id!(employee_id)
     party_id = employee |> Map.get(:party, %{}) |> Map.get(:id)
     party = party_id |> Parties.get_by_id!()
@@ -159,37 +159,37 @@ defmodule EHealth.Employees do
     employee_update_params =
       Map.merge(employee_request, %{
         "employee_type" => employee.employee_type,
-        "updated_by" => get_consumer_id(req_headers),
+        "updated_by" => get_consumer_id(headers),
         "speciality" => EmployeeRequests.get_employee_speciality(employee_request)
       })
 
-    with {:ok, _} <- suspend_all_party_contracts(party_id, req_headers),
-         {:ok, _} <- EmployeeCreator.create_party_user(party, req_headers),
-         :ok <- UserRoleCreator.create(employee, req_headers),
+    with {:ok, _} <- suspend_all_party_contracts(party_id, headers),
+         {:ok, _} <- EmployeeCreator.create_party_user(party, headers),
+         :ok <- UserRoleCreator.create(employee, headers),
          %Changeset{valid?: true} = party_changeset <- Parties.changeset(party, party_update_params),
          %Changeset{valid?: true} = employee_changeset <- changeset(employee, employee_update_params) do
       if maybe_suspend_contracts?(party_changeset, :party) || maybe_suspend_contracts?(employee_changeset, :employee) do
-        transaction_update_with_contract(party_changeset, employee_changeset, req_headers)
+        transaction_update_with_contract(party_changeset, employee_changeset, headers)
       else
-        __MODULE__.update(employee, employee_update_params, get_consumer_id(req_headers))
+        __MODULE__.update(employee, employee_update_params, get_consumer_id(headers))
       end
     end
   end
 
-  def create_or_update_employee(%Request{} = employee_request, req_headers) do
-    with {:ok, %Employee{party_id: party_id} = employee} <- EmployeeCreator.create(employee_request, req_headers),
-         {:ok, _} <- suspend_all_party_contracts(party_id, req_headers),
-         :ok <- UserRoleCreator.create(employee, req_headers) do
+  def create_or_update_employee(%Request{} = employee_request, headers) do
+    with {:ok, %Employee{party_id: party_id} = employee} <- EmployeeCreator.create(employee_request, headers),
+         {:ok, _} <- suspend_all_party_contracts(party_id, headers),
+         :ok <- UserRoleCreator.create(employee, headers) do
       {:ok, employee}
     end
   end
 
-  defp suspend_all_party_contracts(party_id, req_headers) do
-    contracts = party_contracts_to_suspend(party_id, req_headers)
+  defp suspend_all_party_contracts(party_id, headers) do
+    contracts = party_contracts_to_suspend(party_id, headers)
     suspend_contracts(contracts)
   end
 
-  defp party_contracts_to_suspend(party_id, req_headers) do
+  defp party_contracts_to_suspend(party_id, headers) do
     Employee
     |> where([e], e.is_active)
     |> where([e], e.employee_type == ^@type_owner)
@@ -206,7 +206,7 @@ defmodule EHealth.Employees do
         :ok,
         %Page{entries: contracts},
         _
-      } = Contracts.list(get_contracts_params, nil, req_headers)
+      } = Contracts.list(get_contracts_params, nil, headers)
 
       contracts ++ acc
     end)
