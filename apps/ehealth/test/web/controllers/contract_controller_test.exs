@@ -737,7 +737,7 @@ defmodule EHealth.Web.ContractControllerTest do
 
       conn =
         conn
-        |> put_client_id_header(UUID.generate())
+        |> put_client_id_header(legal_entity.id)
         |> put_consumer_id_header(party_user.user_id)
         |> Plug.Conn.put_req_header("drfo", party_user.party.tax_id)
         |> patch(contract_path(conn, :update, contract.id), params)
@@ -833,7 +833,7 @@ defmodule EHealth.Web.ContractControllerTest do
 
       conn =
         conn
-        |> put_client_id_header(UUID.generate())
+        |> put_client_id_header(legal_entity.id)
         |> put_consumer_id_header(party_user.user_id)
         |> Plug.Conn.put_req_header("drfo", party_user.party.tax_id)
         |> patch(contract_path(conn, :update, contract.id), params)
@@ -882,12 +882,13 @@ defmodule EHealth.Web.ContractControllerTest do
     end
 
     test "client_id validation failed during update_employee", %{conn: conn} do
-      nhs()
+      msp()
       contract_request = insert(:il, :contract_request)
       contract = insert(:prm, :contract, contract_request_id: contract_request.id)
       legal_entity = insert(:prm, :legal_entity, id: contract.contractor_legal_entity_id)
+      legal_entity_out = insert(:prm, :legal_entity)
       division = insert(:prm, :division, legal_entity: legal_entity)
-      employee = insert(:prm, :employee, legal_entity: legal_entity)
+      employee = insert(:prm, :employee, legal_entity: legal_entity_out)
       employee_id = employee.id
       insert(:prm, :contract_division, contract_id: contract.id, division_id: division.id)
 
@@ -931,12 +932,13 @@ defmodule EHealth.Web.ContractControllerTest do
     end
 
     test "client_id validation failed during insert_employee", %{conn: conn} do
-      nhs()
+      msp()
       contract_request = insert(:il, :contract_request)
       contract = insert(:prm, :contract, contract_request_id: contract_request.id)
       legal_entity = insert(:prm, :legal_entity, id: contract.contractor_legal_entity_id)
+      legal_entity_out = insert(:prm, :legal_entity)
       division = insert(:prm, :division, legal_entity: legal_entity)
-      employee = insert(:prm, :employee, legal_entity: legal_entity)
+      employee = insert(:prm, :employee, legal_entity: legal_entity_out)
       employee_id = employee.id
       insert(:prm, :contract_division, contract_id: contract.id, division_id: division.id)
       party_user = insert(:prm, :party_user)
